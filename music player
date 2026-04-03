@@ -1,0 +1,45 @@
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// ===== MongoDB Atlas Connection =====
+mongoose.connect('mongodb+srv://<username>:<password>@cluster0.abcd.mongodb.net/music_app?retryWrites=true&w=majority', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(() => {
+  console.log('Connected to MongoDB Atlas');
+}).catch(err => {
+  console.error('MongoDB connection error:', err);
+});
+
+// ===== Song Schema =====
+const songSchema = new mongoose.Schema({
+  title: String,
+  artist: String,
+  url: String
+});
+const Song = mongoose.model('Song', songSchema);
+
+// ===== API Routes =====
+app.get('/songs', async (req, res) => {
+  const songs = await Song.find();
+  res.json(songs);
+});
+
+app.post('/songs', async (req, res) => {
+  const newSong = new Song(req.body);
+  await newSong.save();
+  res.json(newSong);
+});
+
+app.get('/songs/search/:title', async (req, res) => {
+  const songs = await Song.find();
+  const result = songs.find(song => song.title.toLowerCase() === req.params.title.toLowerCase());
+  res.json(result);
+});
+
+app.listen(5000, () => console.log('Server running on port 5000'));
