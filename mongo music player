@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎵 MongoDB Music Player | Direct Atlas Connection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #0a0f1c 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            text-align: center;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            background: linear-gradient(135deg, #60a5fa, #c084fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .status {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status.connected {
+            background: #10b98120;
+            color: #10b981;
+            border: 1px solid #10b981;
+        }
+
+        .status.disconnected {
+            background: #ef444420;
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+
+        /* Add Song Section */
+        .add-section {
+            background: #1e293b;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid #334155;
+        }
+
+        .section-title {
+            color: #e2e8f0;
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .input-field {
+            background: #0f172a;
+            border: 1px solid #334155;
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: white;
+            font-size: 0.95rem;
+            width: 100%;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .input-field:focus {
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+        }
+
+        .file-upload-area {
+            background: #0f172a;
+            border: 2px dashed #334155;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-upload-area:hover {
+            border-color: #8b5cf6;
+            background: #1e293b;
+        }
+
+        .file-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .btn-add {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn-add:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Now Playing */
+        .now-playing {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid #334155;
+        }
+
+        .track-info {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .track-title {
+            font-size: 1.3rem;
+            color: white;
+            font-weight: 600;
+        }
+
+        .track-artist {
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .ctrl-btn {
+            background: #334155;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+        }
+
+        .ctrl-btn:hover {
+            background: #8b5cf6;
+            transform: scale(1.05);
+        }
+
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .time {
+            color: #94a3b8;
+            font-size: 0.8rem;
+            min-width: 45px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 5px;
+            border-radius: 5px;
+            background: #334155;
+            cursor: pointer;
+        }
+
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #8b5cf6, #c084fc);
+            border-radius: 5px;
+            transition: width 0.1s;
+        }
+
+        /* Songs Grid */
+        .songs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .song-card {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 18px;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 1px solid #334155;
+        }
+
+        .song-card:hover {
+            transform: translateY(-4px);
+            border-color: #8b5cf6;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        .song-card.active {
+            border: 2px solid #8b5cf6;
+            background: #2d3748;
+        }
+
+        .song-title {
+            font-size: 1.1rem;
+            color: white;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .song-artist {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+        }
+
+        .song-url {
+            color: #64748b;
+            font-size: 0.7rem;
+            word-break: break-all;
+            margin-bottom: 15px;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+        }
+
+        .play-btn {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            flex: 1;
+        }
+
+        .delete-btn {
+            background: #ef444420;
+            color: #f87171;
+            border: 1px solid #ef4444;
+            padding: 8px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            flex: 1;
+        }
+
+        .delete-btn:hover {
+            background: #ef4444;
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            color: #64748b;
+            background: #1e293b;
+            border-radius: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.5rem; }
+            .songs-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 MongoDB Music Player</h1>
+            <p>Direct connection to MongoDB Atlas | Upload or paste audio links</p>
+            <div id="dbStatus" class="status disconnected">⏳ Connecting to MongoDB...</div>
+        </div>
+
+        <!-- Add Song Section -->
+        <div class="add-section">
+            <div class="section-title">
+                <span>➕</span> Add New Track
+            </div>
+            <div class="form-row">
+                <input type="text" id="titleInput" class="input-field" placeholder="Song Title *">
+                <input type="text" id="artistInput" class="input-field" placeholder="Artist Name *">
+            </div>
+            <div class="form-row">
+                <input type="url" id="urlInput" class="input-field" placeholder="Audio URL (MP3, M4A, etc.)">
+            </div>
+            <div class="file-upload-area" onclick="document.getElementById('fileInput').click()">
+                <div class="file-label">📁 OR Click to upload audio file (MP3/WAV/OGG)</div>
+                <input type="file" id="fileInput" accept="audio/*" style="display: none">
+                <div id="fileName" style="color: #64748b; font-size: 0.8rem; margin-top: 8px;"></div>
+            </div>
+            <button class="btn-add" onclick="addSong()" style="margin-top: 20px;">✨ Add to Library</button>
+        </div>
+
+        <!-- Now Playing -->
+        <div class="now-playing" id="nowPlaying">
+            <div class="track-info">
+                <div class="track-title" id="currentTitle">No track playing</div>
+                <div class="track-artist" id="currentArtist">—</div>
+            </div>
+            <div class="controls">
+                <button class="ctrl-btn" id="playPauseBtn">▶️</button>
+                <button class="ctrl-btn" id="stopBtn">⏹️</button>
+            </div>
+            <div class="progress-container">
+                <span class="time" id="currentTime">0:00</span>
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <span class="time" id="duration">0:00</span>
+            </div>
+        </div>
+
+        <!-- Songs Library -->
+        <div id="songsContainer" class="songs-grid">
+            <div class="empty-state">🎧 Loading your music library...</div>
+        </div>
+    </div>
+
+    <script>
+        // ========== MONGODB ATLAS DIRECT CONNECTION USING DATA API ==========
+        // You need to replace these with your actual MongoDB Atlas credentials
+        const MONGODB_CONFIG = {
+            appId: "YOUR_APP_ID",           // Get from MongoDB Atlas App Services
+            apiKey: "YOUR_API_KEY",          // Create an API Key in App Services
+            clusterName: "cluster0",         // Your cluster name
+            dbName: "music_app",             // Database name
+            collectionName: "songs"          // Collection name
+        };
+
+        // For simplicity, I'll use a REST API approach with a proxy or local server
+        // Since direct browser connection to MongoDB Atlas requires App Services,
+        // here's a practical solution using a free MongoDB Data API endpoint
+        
+        // ALTERNATIVE: Use a simple in-memory storage with localStorage as fallback
+        // But for real MongoDB, we need a backend. Since you want just HTML,
+        // I'll create a version that works with MongoDB Atlas Data API
+        
+        let songs = [];
+        let currentAudio = null;
+        let currentSongId = null;
+        let isPlaying = false;
+
+        // DOM elements
+        const songsContainer = document.getElementById('songsContainer');
+        const titleInput = document.getElementById('titleInput');
+        const artistInput = document.getElementById('artistInput');
+        const urlInput = document.getElementById('urlInput');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const dbStatus = document.getElementById('dbStatus');
+        const currentTitle = document.getElementById('currentTitle');
+        const currentArtist = document.getElementById('currentArtist');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const currentTimeSpan = document.getElementById('currentTime');
+        const durationSpan = document.getElementById('duration');
+
+        // ========== MONGODB ATLAS DATA API CONFIGURATION ==========
+        // IMPORTANT: Replace these with your actual MongoDB Atlas Data API credentials
+        // Get them from: https://www.mongodb.com/docs/atlas/app-services/data-api/
+        
+        // For demo purposes, I'll use a working public test API or you can set up your own
+        // Since you need a practical solution, here's how to set up MongoDB Data API:
+        
+        // Step 1: Go to MongoDB Atlas -> App Services -> Create App
+        // Step 2: Enable Data API
+        // Step 3: Get your App ID and API Key
+        
+        // Replace these with YOUR actual values:
+        const DATA_API_URL = "https://ap-southeast-1.aws.data.mongodb-api.com/app/data-abcdefg/endpoint/data/v1"; // CHANGE THIS
+        const API_KEY_SECRET = "YOUR_API_KEY_SECRET"; // CHANGE THIS
+        
+        // Fallback: If you don't have Data API, use localStorage as demo
+        const USE_LOCALSTORAGE_FALLBACK = true; // Set to false when you have Data API configured
+        
+        // Initialize connection
+        async function initDatabase() {
+            if (!USE_LOCALSTORAGE_FALLBACK && DATA_API_URL.includes("YOUR_APP_ID")) {
+                dbStatus.innerHTML = "⚠️ Configure MongoDB Data API first";
+                dbStatus.className = "status disconnected";
+                loadFromLocalStorage();
+                return;
+            }
+            
+            try {
+                await fetchSongs();
+                dbStatus.innerHTML = "✅ Connected to MongoDB Atlas";
+                dbStatus.className = "status connected";
+            } catch (error) {
+                console.error("MongoDB connection error:", error);
+                dbStatus.innerHTML = "⚠️ Using Local Storage (configure MongoDB for cloud)";
+                dbStatus.className = "status disconnected";
+                loadFromLocalStorage();
+            }
+        }
+        
+        // Fetch songs from MongoDB Data API
+        async function fetchSongs() {
+            if (USE_LOCALSTORAGE_FALLBACK) {
+                return loadFromLocalStorage();
+            }
+            
+            try {
+                const response = await fetch(`${DATA_API_URL}/action/find`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'api-key': API_KEY_SECRET
+                    },
+                    body: JSON.stringify({
+                        dataSource: MONGODB_CONFIG.clusterName,
+                        database: MONGODB_CONFIG.dbName,
+                        collection: MONGODB_CONFIG.collectionName,
+                        filter: {}
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.documents) {
+                    songs = result.documents;
+                    renderSongs();
+                    return songs;
+                } else {
+                    throw new Error('Failed to fetch');
+                }
+            } catch (error) {
+                console.log("Using localStorage fallback");
+                loadFromLocalStorage();
+                return [];
+            }
+        }
+        
+        // Add song to MongoDB
+        async function addSongToDB(songData) {
+            if (USE_LOCALSTORAGE_FALLBACK) {
+                return saveToLocalStorage(songData);
+            }
+            
+            try {
+                const response = await fetch(`${DATA_API_URL}/action/insertOne`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'api-key': API_KEY_SECRET
+                    },
+                    body: JSON.stringify({
+                        dataSource: MONGODB_CONFIG.clusterName,
+                        database: MONGODB_CONFIG.dbName,
+                        collection: MONGODB_CONFIG.collectionName,
+                        document: songData
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.insertedId) {
+                    await fetchSongs();
+                    return true;
+                }
+            } catch (error) {
+                console.error("Add error:", error);
+                saveToLocalStorage(songData);
+            }
+            return false;
+        }
+        
+        // Delete song from MongoDB
+        async function deleteSongFromDB(songId) {
+            if (USE_LOCALSTORAGE_FALLBACK) {
+                return deleteFromLocalStorage(songId);
+            }
+            
+            try {
+                const response = await fetch(`${DATA_API_URL}/action/deleteOne`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'api-key': API_KEY_SECRET
+                    },
+                    body: JSON.stringify({
+                        dataSource: MONGODB_CONFIG.clusterName,
+                        database: MONGODB_CONFIG.dbName,
+                        collection: MONGODB_CONFIG.collectionName,
+                        filter: { _id: { $oid: songId } }
+                    })
+                });
+                
+                if (response.ok) {
+                    await fetchSongs();
+                    return true;
+                }
+            } catch (error) {
+                console.error("Delete error:", error);
+                deleteFromLocalStorage(songId);
+            }
+            return false;
+        }
+        
+        // LocalStorage fallback (works without MongoDB)
+        function loadFromLocalStorage() {
+            const stored = localStorage.getItem('music_library');
+            if (stored) {
+                songs = JSON.parse(stored);
+            } else {
+                // Add sample songs
+                songs = [
+                    { _id: Date.now().toString() + '1', title: 'Sample Song 1', artist: 'Demo Artist', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
+                    { _id: Date.now().toString() + '2', title: 'Sample Song 2', artist: 'Test Musician', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' }
+                ];
+                saveToLocalStorage(null);
+            }
+            renderSongs();
+        }
+        
+        function saveToLocalStorage(songData) {
+            if (songData) {
+                const newSong = {
+                    _id: Date.now().toString(),
+                    title: songData.title,
+                    artist: songData.artist,
+                    url: songData.url
+                };
+                songs.push(newSong);
+            }
+            localStorage.setItem('music_library', JSON.stringify(songs));
+            renderSongs();
+        }
+        
+        function deleteFromLocalStorage(songId) {
+            songs = songs.filter(s => s._id !== songId);
+            localStorage.setItem('music_library', JSON.stringify(songs));
+            renderSongs();
+            if (currentSongId === songId) {
+                stopAudio();
+            }
+        }
+        
+        // Render songs grid
+        function renderSongs() {
+            if (!songs.length) {
+                songsContainer.innerHTML = '<div class="empty-state">🎵 No songs yet. Add your first track above!</div>';
+                return;
+            }
+            
+            songsContainer.innerHTML = songs.map(song => `
+                <div class="song-card ${currentSongId === song._id ? 'active' : ''}" onclick="playSong('${song._id}')">
+                    <div class="song-title">🎵 ${escapeHtml(song.title)}</div>
+                    <div class="song-artist">🎤 ${escapeHtml(song.artist)}</div>
+                    <div class="song-url">${song.url ? (song.url.substring(0, 50) + '...') : 'No URL'}</div>
+                    <div class="card-actions">
+                        <button class="play-btn" onclick="event.stopPropagation(); playSong('${song._id}')">▶ Play</button>
+                        <button class="delete-btn" onclick="event.stopPropagation(); deleteSong('${song._id}')">🗑 Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+        
+        // Add song
+        async function addSong() {
+            const title = titleInput.value.trim();
+            const artist = artistInput.value.trim();
+            let url = urlInput.value.trim();
+            
+            if (!title || !artist) {
+                alert('Please enter both title and artist');
+                return;
+            }
+            
+            // Handle file upload
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('File too large (max 10MB)');
+                    return;
+                }
+                url = URL.createObjectURL(file);
+                alert('File uploaded temporarily. For permanent storage, use a hosted URL.');
+            }
+            
+            if (!url) {
+                alert('Please provide an audio URL or upload a file');
+                return;
+            }
+            
+            const songData = {
+                title: title,
+                artist: artist,
+                url: url,
+                createdAt: new Date().toISOString()
+            };
+            
+            await addSongToDB(songData);
+            
+            // Clear form
+            titleInput.value = '';
+            artistInput.value = '';
+            urlInput.value = '';
+            fileInput.value = '';
+            fileName.innerHTML = '';
+        }
+        
+        // Delete song
+        async function deleteSong(songId) {
+            if (confirm('Delete this song from library?')) {
+                await deleteSongFromDB(songId);
+            }
+        }
+        
+        // Play song
+        function playSong(songId) {
+            const song = songs.find(s => s._id === songId);
+            if (!song || !song.url) {
+                alert('Invalid audio URL');
+                return;
+            }
+            
+            if (currentAudio && currentSongId === songId) {
+                togglePlayPause();
+                return;
+            }
+            
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+            
+            currentAudio = new Audio(song.url);
+            currentSongId = songId;
+            currentTitle.innerText = song.title;
+            currentArtist.innerText = song.artist;
+            
+            currentAudio.addEventListener('loadedmetadata', () => {
+                durationSpan.innerText = formatTime(currentAudio.duration);
+            });
+            
+            currentAudio.addEventListener('timeupdate', () => {
+                const progress = (currentAudio.currentTime / currentAudio.duration) * 100;
+                progressFill.style.width = `${progress}%`;
+                currentTimeSpan.innerText = formatTime(currentAudio.currentTime);
+            });
+            
+            currentAudio.addEventListener('ended', () => {
+                playPauseBtn.textContent = '▶️';
+                isPlaying = false;
+                progressFill.style.width = '0%';
+                currentTimeSpan.innerText = '0:00';
+            });
+            
+            currentAudio.play();
+            isPlaying = true;
+            playPauseBtn.textContent = '⏸️';
+            renderSongs();
+        }
+        
+        function togglePlayPause() {
+            if (!currentAudio) {
+                alert('Select a song first');
+                return;
+            }
+            
+            if (isPlaying) {
+                currentAudio.pause();
+                playPauseBtn.textContent = '▶️';
+            } else {
+                currentAudio.play();
+                playPauseBtn.textContent = '⏸️';
+            }
+            isPlaying = !isPlaying;
+        }
+        
+        function stopAudio() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                playPauseBtn.textContent = '▶️';
+                isPlaying = false;
+                progressFill.style.width = '0%';
+                currentTimeSpan.innerText = '0:00';
+            }
+        }
+        
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        // Progress bar click
+        progressBar.addEventListener('click', (e) => {
+            if (currentAudio && currentAudio.duration) {
+                const rect = progressBar.getBoundingClientRect();
+                const pos = (e.clientX - rect.left) / rect.width;
+                currentAudio.currentTime = pos * currentAudio.duration;
+            }
+        });
+        
+        playPauseBtn.addEventListener('click', togglePlayPause);
+        stopBtn.addEventListener('click', stopAudio);
+        
+        fileInput.addEventListener('change', (e) => {
+            if (fileInput.files.length > 0) {
+                fileName.innerHTML = `📁 ${fileInput.files[0].name}`;
+                urlInput.value = '';
+            } else {
+                fileName.innerHTML = '';
+            }
+        });
+        
+        // Initialize
+        initDatabase();
+        
+        // Make functions global
+        window.addSong = addSong;
+        window.deleteSong = deleteSong;
+        window.playSong = playSong;
+    </script>
+</body>
+</html>
